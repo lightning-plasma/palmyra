@@ -39,9 +39,8 @@ class PalmyraRunner(
     ) = launch {
         val jobs = mutableListOf<Deferred<Any>>()
         bookRepository.findAll().collect {
-            val book = Book(Isbn(it.isbn), it.title, it.author, it.price)
-
             jobs += async {
+                val book = Book(Isbn(it.isbn), it.title, it.author, it.price)
                 bookChannel.send(book)
             }
         }
