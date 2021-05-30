@@ -1,62 +1,37 @@
 package com.architype.palmyra.runner
 
-import com.architype.palmyra.entity.Book
-import com.architype.palmyra.entity.Isbn
-import com.architype.palmyra.repository.BookRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import com.architype.palmyra.entity.Foo
+import com.fasterxml.jackson.dataformat.csv.CsvMapper
+import com.fasterxml.jackson.dataformat.csv.CsvSchema
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
+import org.springframework.util.ResourceUtils
+import java.nio.file.Files
+import javax.validation.Validator
 
-// https://kotlinlang.org/docs/channels.html#fan-out
 @Component
 class PalmyraRunner(
-    private val bookRepository: BookRepository
+    private val validator: Validator
 ) : ApplicationRunner {
-    override fun run(args: ApplicationArguments) = runBlocking {
-        val bookChannel = Channel<Book>()
+    override fun run(args: ApplicationArguments) {
+        val filePath = ResourceUtils.getFile("classpath:foo.csv").toPath()
+        val reader = Files.newBufferedReader(filePath)
+        val mapper = CsvMapper().registerModule(KotlinModule())
 
-        produceBook(bookChannel)
+        val iterator = mapper
+            .readerFor(Foo::class.java)
+            .with(CsvSchema.emptySchema().withHeader())
+            .readValues<Foo>(reader)
 
-        // fan-out
-        repeat(5) {
-            launchProcessSuccess(bookChannel)
-        }
-        // return@runBlocking
-    }
-
-    fun CoroutineScope.produceBook(
-        bookChannel: SendChannel<Book>
-    ) = launch {
-        val jobs = mutableListOf<Deferred<Any>>()
-        bookRepository.findAll().collect {
-            jobs += async {
-                val book = Book(Isbn(it.isbn), it.title, it.author, it.price)
-                bookChannel.send(book)
+        iterator.forEach {
+            val errors = validator.validate(it)
+            if (errors.isEmpty()) {
+                println(it)
+            } else {
+                println(errors)
             }
         }
-
-        // すべてのchannel sendの終了まで待つ
-        println("Rest work is ${jobs.size}")
-        if (jobs.isNotEmpty()) jobs.awaitAll()
-
-        bookChannel.close()
     }
-
-    // fan-outで実行する処理を記述する
-    fun CoroutineScope.launchProcessSuccess(channel: ReceiveChannel<Book>) =
-        launch {
-            for (b in channel) {
-                println(b)
-            }
-        }
 }
