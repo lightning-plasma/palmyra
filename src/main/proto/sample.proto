@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "example.grpc.greeting";
+option java_outer_classname = "GreetingServiceProto";
+
+package com.architype.palmyra.sample;
+
+message Customer {
+  string first_name = 1;
+  string last_name = 2;
+  string nick_name = 3;
+  int32 age = 4;
+  string address = 5;
+  string tel = 6;
+  string email_address = 7;
+  string hobby = 8;
+  bool has_car = 9;
+  string extra = 10;
+}

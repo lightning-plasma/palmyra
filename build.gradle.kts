@@ -1,11 +1,16 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.google.protobuf.gradle.generateProtoTasks
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.plugins
+import com.google.protobuf.gradle.protobuf
+import com.google.protobuf.gradle.protoc
 
 plugins {
-	id("org.springframework.boot") version "2.5.1"
-	id("io.spring.dependency-management") version "1.0.11.RELEASE"
+	id("com.google.protobuf") version "0.8.16"
+	id("me.champeau.gradle.jmh") version "0.5.3"
+	id("idea")
+	id("java")
 	kotlin("jvm") version "1.5.20"
-	kotlin("plugin.spring") version "1.5.20"
-	kotlin("plugin.serialization") version "1.5.20"
 }
 
 group = "com.architype"
@@ -17,21 +22,44 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-	implementation("org.springframework.boot:spring-boot-starter-validation")
-	implementation("org.springframework.boot:spring-boot-starter")
-	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1")
-	implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+	implementation("com.fasterxml.jackson.core:jackson-core:2.12.3")
+	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.3")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.3")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
-	// for blockhound
-	implementation("io.projectreactor.tools:blockhound:1.0.6.RELEASE")
-	runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-debug")
+	implementation("io.grpc:grpc-netty-shaded:1.38.0")
+	implementation("io.grpc:grpc-protobuf:1.38.0")
+	implementation("io.grpc:grpc-stub:1.38.0")
+	implementation("org.openjdk.jmh:jmh-core:1.25")
+	implementation("com.google.protobuf:protobuf-java-util:3.17.3")
+}
 
-	runtimeOnly("io.r2dbc:r2dbc-postgresql")
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	testImplementation("io.projectreactor:reactor-test")
+protobuf {
+	protoc {
+		artifact = "com.google.protobuf:protoc:3.17.3"
+	}
+
+	plugins {
+		id("grpc") {
+			artifact = "io.grpc:protoc-gen-grpc-java:1.38.1"
+		}
+	}
+
+	generateProtoTasks {
+		all().forEach {
+			it.plugins {
+				id("grpc")
+			}
+		}
+	}
+}
+
+idea {
+	module {
+		listOf("java", "grpc").forEach { dir ->
+			sourceSets.getByName("main").java { srcDir("$buildDir/generated/source/proto/main/$dir") }
+		}
+	}
 }
 
 tasks.withType<KotlinCompile> {
