@@ -11,6 +11,7 @@ plugins {
 	id("idea")
 	id("java")
 	kotlin("jvm") version "1.5.20"
+	kotlin("kapt") version "1.5.20"
 }
 
 group = "com.architype"
@@ -31,6 +32,14 @@ dependencies {
 	implementation("io.grpc:grpc-protobuf:1.38.0")
 	implementation("io.grpc:grpc-stub:1.38.0")
 	implementation("org.openjdk.jmh:jmh-core:1.25")
+
+	implementation("ma.glasnost.orika:orika-core:1.5.4")
+	implementation("org.mapstruct:mapstruct:1.4.2.Final")
+	implementation("org.openjdk.jmh:jmh-generator-annprocess:1.25")
+	// https://stackoverflow.com/questions/45085806/kotlins-kapt-plugin-for-gradle-does-not-work-for-custom-source-set-jmh
+	kapt("org.mapstruct:mapstruct-processor:1.4.2.Final")
+	kaptJmh("org.openjdk.jmh:jmh-generator-annprocess:1.25")
+
 	implementation("com.google.protobuf:protobuf-java-util:3.17.3")
 }
 
