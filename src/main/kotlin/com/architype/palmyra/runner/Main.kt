@@ -1,39 +1,38 @@
 package com.architype.palmyra.runner
 
-import com.architype.palmyra.mapper.CustomerMapper
-import example.grpc.greeting.Customer
-import ma.glasnost.orika.impl.DefaultMapperFactory
-import org.mapstruct.factory.Mappers
+import com.architype.palmyra.entity.CsvSample
+import com.fasterxml.jackson.dataformat.csv.CsvGenerator
+import com.fasterxml.jackson.dataformat.csv.CsvMapper
+import com.fasterxml.jackson.dataformat.csv.CsvSchema
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 fun main() {
-    val customer = Customer.newBuilder()
-        .setFirstName("foo")
-        .setLastName("bar")
-        .setNickName("fizz")
-        .setAge(20)
-        .setAddress("some place")
-        .setTel("00011112222")
-        .setEmailAddress("foo@bar.fizz")
-        .setHobby("none")
-        .setHasCar(true)
-        .setExtra("nothing")
-        .build()
+    val csvMapper = CsvMapper().apply {
+        registerModule(KotlinModule())
+    }.configure(CsvGenerator.Feature.STRICT_CHECK_FOR_QUOTING, true)
 
-    // orika
-    // https://github.com/orika-mapper/orika
-    // spring boot starter
-    // https://github.com/akkinoc/orika-spring-boot-starter
-    val mapperFactory = DefaultMapperFactory.Builder().build()
-    val mapper = mapperFactory.mapperFacade
+    val csvSchema = csvMapper.schemaFor(CsvSample::class.java).withHeader()
 
-    val convertedByOrika = mapper.map(customer, com.architype.palmyra.entity.Customer::class.java)
-    println(convertedByOrika)
+    val foo = csvMapper.writer(csvSchema)
+        .writeValueAsString(CsvSample("foo", "bar", "fizz"))
+    println(foo)
 
-    // mapStruct
-    // https://github.com/mapstruct/mapstruct
-    // https://mapstruct.org/
-    // spring-bootのComponentに自動でMapperを設定することもできる
-    val converter = Mappers.getMapper(CustomerMapper::class.java)
-    val convertedByMapStruct = converter.mapping(customer)
-    println(convertedByMapStruct)
+    val bar = csvMapper.readerFor(CsvSample::class.java)
+        .with(CsvSchema.emptySchema().withHeader())
+        .readValues<CsvSample>(CSV)
+        .readAll()
+        .toList()
+    println(bar)
 }
+
+fun createCsvSchema(): CsvSchema =
+    CsvSchema.emptySchema()
+        // .withHeader()
+        .withLineSeparator("\n")
+        .withColumnSeparator(',')
+
+val CSV = """
+大大カテゴリ,lCategoryCode,foo_bar_fizz
+foo,bar,fizz
+1,2,3
+""".trimIndent()

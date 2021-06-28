@@ -25,6 +25,7 @@ repositories {
 dependencies {
 	implementation("com.fasterxml.jackson.core:jackson-core:2.12.3")
 	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.3")
+	implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-csv:2.12.3")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.3")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 
