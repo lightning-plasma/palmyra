@@ -17,7 +17,6 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("org.springframework.boot:spring-boot-starter")
 	implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.1")
@@ -29,7 +28,10 @@ dependencies {
 	implementation("io.projectreactor.tools:blockhound:1.0.6.RELEASE")
 	runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-debug")
 
-	runtimeOnly("io.r2dbc:r2dbc-postgresql")
+	// for aws sqs
+	implementation(platform("software.amazon.awssdk:bom:2.16.88"))
+	implementation("software.amazon.awssdk:sqs")
+
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("io.projectreactor:reactor-test")
 }
