@@ -1,62 +1,73 @@
 package com.architype.palmyra.runner
 
-import com.architype.palmyra.entity.Book
-import com.architype.palmyra.entity.Isbn
-import com.architype.palmyra.repository.BookRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import com.architype.palmyra.entity.SqsMessage
+import com.architype.palmyra.repository.sqs.SqsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
 import org.springframework.stereotype.Component
+import java.util.concurrent.CompletableFuture
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
+// https://github.com/awsdocs/aws-doc-sdk-examples/tree/master/javav2
 // https://kotlinlang.org/docs/channels.html#fan-out
 @Component
+@ExperimentalCoroutinesApi
 class PalmyraRunner(
-    private val bookRepository: BookRepository
+    private val sqsRepository: SqsRepository
 ) : ApplicationRunner {
     override fun run(args: ApplicationArguments) = runBlocking {
-        val bookChannel = Channel<Book>()
+        val url = sqsRepository.getUrl("category-queue-dev").await().queueUrl()
 
-        produceBook(bookChannel)
+        val receiveChannel = Channel<SqsMessage>()
+        val deleteChannel = Channel<SqsMessage>()
 
-        // fan-out
-        repeat(5) {
-            launchProcessSuccess(bookChannel)
+        // coroutine 1 produce
+        val receiveJob = launch {
+            sqsRepository.receive(url, receiveChannel)
         }
-        // return@runBlocking
+
+        // coroutine 2 process (fan-out)
+        val processJob = launch {
+            sqsRepository.process(receiveChannel, deleteChannel)
+        }
+
+        // coroutine 3 delete
+        val deleteJob = launch {
+            sqsRepository.delete(url, deleteChannel)
+        }
+
+        // receiveが完了したらMessageChannelを閉じる
+        receiveJob.join()
+        receiveChannel.close()
+
+        // processJobが完了したらDeleteChannelを閉じる
+        processJob.join()
+        deleteChannel.close()
+
+        // deleteが終わったら終了
+        deleteJob.join()
+        println("done")
+
+        return@runBlocking
     }
-
-    fun CoroutineScope.produceBook(
-        bookChannel: SendChannel<Book>
-    ) = launch {
-        val jobs = mutableListOf<Deferred<Any>>()
-        bookRepository.findAll().collect {
-            jobs += async {
-                val book = Book(Isbn(it.isbn), it.title, it.author, it.price)
-                bookChannel.send(book)
-            }
-        }
-
-        // すべてのchannel sendの終了まで待つ
-        println("Rest work is ${jobs.size}")
-        if (jobs.isNotEmpty()) jobs.awaitAll()
-
-        bookChannel.close()
-    }
-
-    // fan-outで実行する処理を記述する
-    fun CoroutineScope.launchProcessSuccess(channel: ReceiveChannel<Book>) =
-        launch {
-            for (b in channel) {
-                println(b)
-            }
-        }
 }
+
+// https://github.com/Kotlin/coroutines-examples/blob/master/examples/future/await.kt
+// https://droidkaigi.github.io/codelabs-kotlin-coroutines-ja/
+// 非同期処理の完了まで待機する
+suspend fun <T> CompletableFuture<T>.await(): T =
+    suspendCoroutine { cont: Continuation<T> ->
+        whenComplete { result, exception ->
+            if (exception == null) // the future has been completed normally
+                cont.resume(result)
+            else // the future has completed with an exception
+                cont.resumeWithException(exception)
+        }
+    }

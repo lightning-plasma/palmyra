@@ -24,6 +24,10 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
 
+	// https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-guava/kotlinx.coroutines.guava/future.html
+	// guavaのFutureをCoroutineで扱う
+	// implementation("org.jetbrains.kotlinx:kotlinx-coroutines-guava")
+
 	// for blockhound
 	implementation("io.projectreactor.tools:blockhound:1.0.6.RELEASE")
 	runtimeOnly("org.jetbrains.kotlinx:kotlinx-coroutines-debug")
