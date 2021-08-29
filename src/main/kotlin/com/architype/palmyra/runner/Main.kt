@@ -1,38 +1,13 @@
 package com.architype.palmyra.runner
 
-import com.architype.palmyra.entity.CsvSample
-import com.fasterxml.jackson.dataformat.csv.CsvGenerator
-import com.fasterxml.jackson.dataformat.csv.CsvMapper
-import com.fasterxml.jackson.dataformat.csv.CsvSchema
-import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.architype.palmyra.converter.MyConverter
 
 fun main() {
-    val csvMapper = CsvMapper().apply {
-        registerModule(KotlinModule())
-    }.configure(CsvGenerator.Feature.STRICT_CHECK_FOR_QUOTING, true)
+    // U+FF5E などが含まれる文字列
+    val source = "スチー～ル製￡軽中∥量～中量－棚（～部品・オ￠プ￠ション~）スチー～ル製￡軽中∥量～中量－棚（～部品・オ￠プ￠ション~）スチー～ル製￡軽中∥量～中量－棚（～部品・オ￠プ￠ション~）"
 
-    val csvSchema = csvMapper.schemaFor(CsvSample::class.java).withHeader()
+    val convert1 = MyConverter.convert(source)
+    val convert2 = MyConverter.convertEach(source)
 
-    val foo = csvMapper.writer(csvSchema)
-        .writeValueAsString(CsvSample("foo", "bar", "fizz"))
-    println(foo)
-
-    val bar = csvMapper.readerFor(CsvSample::class.java)
-        .with(CsvSchema.emptySchema().withHeader())
-        .readValues<CsvSample>(CSV)
-        .readAll()
-        .toList()
-    println(bar)
+    println(convert1 == convert2)
 }
-
-fun createCsvSchema(): CsvSchema =
-    CsvSchema.emptySchema()
-        // .withHeader()
-        .withLineSeparator("\n")
-        .withColumnSeparator(',')
-
-val CSV = """
-大大カテゴリ,lCategoryCode,foo_bar_fizz
-foo,bar,fizz
-1,2,3
-""".trimIndent()

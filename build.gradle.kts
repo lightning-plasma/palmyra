@@ -33,6 +33,7 @@ dependencies {
 	implementation("io.grpc:grpc-protobuf:1.38.0")
 	implementation("io.grpc:grpc-stub:1.38.0")
 	implementation("org.openjdk.jmh:jmh-core:1.25")
+	implementation("com.ibm.icu:icu4j:69.1")
 
 	implementation("ma.glasnost.orika:orika-core:1.5.4")
 	implementation("org.mapstruct:mapstruct:1.4.2.Final")
