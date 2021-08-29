@@ -14,7 +14,8 @@ object MyConverter {
     )
 
     // 変換するべき文字があるかチェックする正規表現
-    private val regex = Regex(map.keys.joinToString("", "[", "]"))
+    // regex.containsMatchIn(text)
+    // private val regex = Regex(map.keys.joinToString("", "[", "]"))
 
     // 変換ルール >> (～ > 〜; － > −; ￠ > ¢; ￡ > £; ￢ > ¬; ― > —; ∥ > ‖)
     // https://github.com/friedrich/icu/blob/master/icu4j/main/tests/translit/src/com/ibm/icu/dev/test/translit/TransliteratorTest.java
